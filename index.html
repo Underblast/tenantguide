@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals -->
-    <!-- Application Structure Plan: A task-oriented, multi-section single-page application. The structure prioritizes immediate user needs in a crisis. A fixed top navigation allows users to jump between an 'Urgent Action Plan', a filterable 'Find a Lawyer' directory, an interactive 'Build Your Case' evidence checklist, a simplified 'Know Your Rights' legal guide, and a 'Community Support' section. This non-linear dashboard approach was chosen over a linear report format to reduce overwhelm and allow users to access the most relevant information (like finding a lawyer or knowing what to do in the next 72 hours) instantly, which is critical for someone facing a time-sensitive eviction notice. -->
-    <!-- Visualization & Content Choices: The report is text-heavy, so the focus is on interactive UI elements, not charts. 'Find a Lawyer' uses a dynamic, filterable grid of cards (JS) to help users quickly compare and select legal aid based on criteria like fee structure, which is more efficient than reading static tables. 'Build Your Case' uses an interactive checklist with a JS-powered progress bar to turn passive information into an empowering, actionable tool. 'Know Your Rights' uses a JS-powered accordion to present complex legal concepts in digestible, user-initiated chunks, preventing information overload. These choices support the task-oriented design by making information discovery and action-taking intuitive and efficient. -->
+    <!-- Application Structure Plan: A task-oriented, multi-section single-page application. The structure prioritizes immediate user needs in a crisis. A fixed top navigation allows users to jump between an 'Urgent Action Plan', a filterable 'Find a Lawyer' directory, an interactive 'Build Your Case' evidence checklist, a simplified 'Know Your Rights' legal guide, a 'Community Support' section, and a new AI-powered 'Letter Assistant'. This non-linear dashboard approach was chosen to reduce overwhelm and allow users to access the most relevant information instantly. -->
+    <!-- Visualization & Content Choices: The report is text-heavy, so the focus is on interactive UI elements. 'Find a Lawyer' uses a dynamic, filterable grid. 'Build Your Case' uses an interactive checklist with a progress bar. 'Know Your Rights' uses a JS-powered accordion. The new 'AI Letter Assistant' uses a form to collect user input and calls the Gemini API to generate text, turning a complex writing task into a simple, guided process. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -75,6 +75,18 @@
             text-decoration: line-through;
             color: #9CA3AF;
         }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #D97706;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -91,6 +103,7 @@
                         <a id="nav-rights" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Know Your Rights</a>
                         <a id="nav-lawyers" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Find a Lawyer</a>
                         <a id="nav-case" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Build Your Case</a>
+                        <a id="nav-draft" class="nav-link px-3 py-2 rounded-md text-sm font-medium">AI Letter Assistant ✨</a>
                         <a id="nav-support" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Community Support</a>
                     </div>
                 </div>
@@ -110,6 +123,7 @@
                 <a id="mobile-nav-rights" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Know Your Rights</a>
                 <a id="mobile-nav-lawyers" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Find a Lawyer</a>
                 <a id="mobile-nav-case" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Build Your Case</a>
+                <a id="mobile-nav-draft" class="nav-link block px-3 py-2 rounded-md text-base font-medium">AI Letter Assistant ✨</a>
                 <a id="mobile-nav-support" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Community Support</a>
             </div>
         </div>
@@ -206,6 +220,40 @@
                     </div>
                 </div>
                 <div id="evidence-checklist" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <section id="draft" class="content-section">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">AI Letter Assistant ✨</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">Create a formal, effective letter to your landlord. Select a topic, provide your key points in plain English, and the AI will generate a professional draft. This helps you build a strong paper trail for your case.</p>
+            </div>
+            <div class="mt-12 max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div class="space-y-4">
+                    <div>
+                        <label for="letter-type" class="block text-sm font-medium text-gray-700">1. Choose a Letter Type</label>
+                        <select id="letter-type" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm rounded-md">
+                            <option value="repair">Notice of Uninhabitable Conditions & Request for Repairs</option>
+                            <option value="withhold">Notice of Intent to Withhold Rent Due to Uninhabitable Conditions</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="user-notes" class="block text-sm font-medium text-gray-700">2. Provide Key Details (in simple bullet points)</label>
+                        <textarea id="user-notes" rows="6" class="mt-1 shadow-sm focus:ring-amber-500 focus:border-amber-500 block w-full sm:text-sm border border-gray-300 rounded-md" placeholder="Example:&#10;- Black mold in bathroom ceiling for 3 weeks&#10;- I was hospitalized for asthma on August 5th&#10;- I emailed you about this on August 1st and got no reply&#10;- The leak is getting worse"></textarea>
+                    </div>
+                    <button id="generate-draft-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                        Generate Draft
+                    </button>
+                </div>
+            </div>
+            <div id="draft-output-container" class="mt-8 max-w-3xl mx-auto hidden">
+                 <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">Generated Draft</h2>
+                 <div id="loader" class="loader mx-auto my-4 hidden"></div>
+                 <div id="draft-output" class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 whitespace-pre-wrap font-mono text-sm"></div>
+                 <button id="copy-draft-btn" class="mt-4 w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                    Copy to Clipboard
+                 </button>
+                 <div id="copy-feedback" class="text-center text-green-600 font-medium mt-2 hidden">Copied!</div>
             </div>
         </section>
 
@@ -398,11 +446,6 @@
                             content.classList.remove('open');
                             icon.style.transform = 'rotate(0deg)';
                         } else {
-                            // Optional: close other accordions
-                            // document.querySelectorAll('.accordion-content.open').forEach(openContent => {
-                            //     openContent.classList.remove('open');
-                            //     openContent.previousElementSibling.querySelector('svg').style.transform = 'rotate(0deg)';
-                            // });
                             content.classList.add('open');
                             icon.style.transform = 'rotate(180deg)';
                         }
@@ -410,6 +453,107 @@
                 });
             }
 
+            // Gemini API Integration
+            const generateBtn = document.getElementById('generate-draft-btn');
+            const outputContainer = document.getElementById('draft-output-container');
+            const outputDiv = document.getElementById('draft-output');
+            const loader = document.getElementById('loader');
+            const copyBtn = document.getElementById('copy-draft-btn');
+            const copyFeedback = document.getElementById('copy-feedback');
+
+            async function handleGenerateDraft() {
+                const letterType = document.getElementById('letter-type').value;
+                const userNotes = document.getElementById('user-notes').value;
+
+                if (!userNotes.trim()) {
+                    alert('Please provide some key details about your situation.');
+                    return;
+                }
+
+                outputContainer.classList.remove('hidden');
+                outputDiv.classList.add('hidden');
+                loader.classList.remove('hidden');
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Generating...';
+
+                let prompt;
+                if (letterType === 'repair') {
+                    prompt = `You are an expert tenant advocate in Los Angeles, California. Draft a formal letter to a landlord about uninhabitable conditions that need immediate repair. The tone should be firm, formal, and clearly state the tenant's rights without being aggressive. The letter must reference the "implied warranty of habitability" under California law. It should demand specific repairs and state a reasonable deadline (e.g., 14 days). Incorporate the following key points from the tenant:\n\n${userNotes}\n\nStructure the letter with the tenant's address, date, landlord's address, a clear subject line, and a closing.`;
+                } else { // withhold
+                    prompt = `You are an expert tenant advocate in Los Angeles, California. Draft a formal letter to a landlord giving notice of the tenant's intent to withhold rent due to unresolved, severe uninhabitable conditions. The tone must be very formal and legally precise. The letter must explicitly state that the landlord has breached the "implied warranty of habitability" under California law. It must reference previous attempts to get repairs made. It must state that rent will be withheld and placed in an escrow/separate account until repairs are completed. Incorporate the following key points from the tenant:\n\n${userNotes}\n\nStructure the letter with the tenant's address, date, landlord's address, a clear subject line, and a closing.`;
+                }
+
+                try {
+                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatHistory };
+                    const apiKey = ""; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        outputDiv.textContent = text;
+                    } else {
+                        outputDiv.textContent = "Sorry, there was an issue generating the draft. The response from the AI was empty. Please try again.";
+                    }
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    outputDiv.textContent = `Sorry, an error occurred while generating the draft. Please check your connection and try again. Details: ${error.message}`;
+                } finally {
+                    loader.classList.add('hidden');
+                    outputDiv.classList.remove('hidden');
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Draft';
+                }
+            }
+
+            function copyDraftToClipboard() {
+                const textToCopy = outputDiv.textContent;
+                // Using the 'pre' element with 'whitespace: pre-wrap' preserves line breaks.
+                // The clipboard API should handle this correctly.
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    copyFeedback.classList.remove('hidden');
+                    setTimeout(() => {
+                        copyFeedback.classList.add('hidden');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    // Fallback for older browsers
+                    try {
+                        const textArea = document.createElement("textarea");
+                        textArea.value = textToCopy;
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        copyFeedback.classList.remove('hidden');
+                        setTimeout(() => {
+                            copyFeedback.classList.add('hidden');
+                        }, 2000);
+                    } catch (e) {
+                         alert('Failed to copy text. Please select and copy it manually.');
+                    }
+                });
+            }
+
+            generateBtn.addEventListener('click', handleGenerateDraft);
+            copyBtn.addEventListener('click', copyDraftToClipboard);
+
+            // Initial setup
             switchTab('home');
             renderLawyers();
             renderEvidenceChecklist();
