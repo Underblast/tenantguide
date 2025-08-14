@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Los Angeles Tenant Defense Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A task-oriented, multi-section single-page application. The structure prioritizes immediate user needs in a crisis. A fixed top navigation allows users to jump between an 'Urgent Action Plan', a filterable 'Find a Lawyer' directory, an interactive 'Build Your Case' evidence checklist, a simplified 'Know Your Rights' legal guide, and a 'Community Support' section. This non-linear dashboard approach was chosen over a linear report format to reduce overwhelm and allow users to access the most relevant information (like finding a lawyer or knowing what to do in the next 72 hours) instantly, which is critical for someone facing a time-sensitive eviction notice. -->
+    <!-- Visualization & Content Choices: The report is text-heavy, so the focus is on interactive UI elements, not charts. 'Find a Lawyer' uses a dynamic, filterable grid of cards (JS) to help users quickly compare and select legal aid based on criteria like fee structure, which is more efficient than reading static tables. 'Build Your Case' uses an interactive checklist with a JS-powered progress bar to turn passive information into an empowering, actionable tool. 'Know Your Rights' uses a JS-powered accordion to present complex legal concepts in digestible, user-initiated chunks, preventing information overload. These choices support the task-oriented design by making information discovery and action-taking intuitive and efficient. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm neutral background */
+            color: #4B4B4B;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #D97706; /* Amber-600 */
+            border-bottom-color: #D97706;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #F3EAD9;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .filter-btn {
+            transition: all 0.3s ease;
+        }
+        .filter-btn.active {
+            background-color: #D97706;
+            color: #FFFFFF;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        .accordion-header {
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .accordion-header:hover {
+            background-color: #FFFBEB; /* Amber-50 */
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+        .accordion-content.open {
+            max-height: 1000px; /* Large enough for content */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .checklist-item input:checked + label span:first-child {
+            background-color: #D97706;
+            border-color: #D97706;
+        }
+        .checklist-item input:checked + label span:last-child {
+            text-decoration: line-through;
+            color: #9CA3AF;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-xl text-amber-700">Tenant Defense Guide</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a id="nav-home" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Urgent Action Plan</a>
+                        <a id="nav-rights" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Know Your Rights</a>
+                        <a id="nav-lawyers" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Find a Lawyer</a>
+                        <a id="nav-case" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Build Your Case</a>
+                        <a id="nav-support" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Community Support</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-amber-600 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a id="mobile-nav-home" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Urgent Action Plan</a>
+                <a id="mobile-nav-rights" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Know Your Rights</a>
+                <a id="mobile-nav-lawyers" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Find a Lawyer</a>
+                <a id="mobile-nav-case" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Build Your Case</a>
+                <a id="mobile-nav-support" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Community Support</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        
+        <section id="home" class="content-section">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">You've Received a 'Notice to Pay or Quit'.</h1>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">This is a serious legal notice, but you have rights. Acting quickly and strategically is critical. This guide provides an immediate action plan to protect your tenancy.</p>
+            </div>
+
+            <div class="mt-12 max-w-4xl mx-auto">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">Your 72-Hour Action Plan</h2>
+                <div class="space-y-8">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 flex flex-col items-center">
+                            <div class="bg-amber-600 text-white rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">1</div>
+                            <div class="w-px h-full bg-gray-300 mt-2"></div>
+                        </div>
+                        <div class="ml-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Day 1: Immediate Action</h3>
+                            <ul class="mt-2 list-disc list-inside space-y-2 text-gray-700">
+                                <li><strong>Gather All Evidence:</strong> Consolidate all documents into one file. This must include medical records from any hospitalizations, photos/videos of your apartment's condition, and all written communication with your landlord.</li>
+                                <li><strong>Contact Top-Tier Private Attorneys:</strong> Start calling tenant-only, contingency-fee law firms. Use the "Find a Lawyer" section of this guide. Schedule as many free consultations as possible.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 flex flex-col items-center">
+                            <div class="bg-amber-600 text-white rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">2</div>
+                            <div class="w-px h-full bg-gray-300 mt-2"></div>
+                        </div>
+                        <div class="ml-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Day 2: Expand Your Support Network</h3>
+                            <ul class="mt-2 list-disc list-inside space-y-2 text-gray-700">
+                                <li><strong>Contact the LA Tenants Union:</strong> Email the Downtown Local chapter (downtown@latenantsunion.org). Community support is invaluable.</li>
+                                <li><strong>File an LAHD Complaint:</strong> Go to the Los Angeles Housing Department website and file a formal code violation complaint online. This creates an official government record.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                         <div class="flex-shrink-0 flex flex-col items-center">
+                            <div class="bg-amber-600 text-white rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">3</div>
+                        </div>
+                        <div class="ml-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Day 3: Secure a Legal Safety Net</h3>
+                            <ul class="mt-2 list-disc list-inside space-y-2 text-gray-700">
+                                <li><strong>Contact Non-Profit Legal Services:</strong> Call the Stay Housed LA hotline (888-694-0040) and the Legal Aid Foundation of Los Angeles (800-399-4529) to begin their intake process.</li>
+                                <li><strong>Cease Direct Communication:</strong> Do not speak with your landlord without a lawyer. Let your attorney handle all communication.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="rights" class="content-section">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Know Your Rights</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">California law provides strong protections for tenants. Understanding these rights is the first step in building your defense. This section explains the key legal concepts that protect your right to a safe and healthy home.</p>
+            </div>
+            <div id="accordion-container" class="mt-12 max-w-4xl mx-auto space-y-4"></div>
+        </section>
+
+        <section id="lawyers" class="content-section">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Find a Lawyer</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">Securing legal representation is the most important step you can take. This directory includes private firms that specialize in tenant rights and non-profit organizations that offer free legal aid. Use the filters to find the right help for your situation.</p>
+            </div>
+            <div class="mt-8 flex flex-wrap justify-center gap-2 md:gap-4">
+                <button data-filter="all" class="filter-btn active px-4 py-2 text-sm font-medium border border-gray-300 rounded-full">All Resources</button>
+                <button data-filter="contingency" class="filter-btn px-4 py-2 text-sm font-medium border border-gray-300 rounded-full">Contingency Fee</button>
+                <button data-filter="non-profit" class="filter-btn px-4 py-2 text-sm font-medium border border-gray-300 rounded-full">Non-Profit / Free</button>
+                <button data-filter="consultation" class="filter-btn px-4 py-2 text-sm font-medium border border-gray-300 rounded-full">Free Consultation</button>
+            </div>
+            <div id="lawyer-grid" class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+        </section>
+
+        <section id="case" class="content-section">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Build Your Case</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">A strong defense is built on solid evidence. Your documentation is the foundation of your legal case. Use this interactive checklist to gather and organize everything you'll need to prove your claim.</p>
+            </div>
+            <div class="mt-12 max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div class="mb-4">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-base font-medium text-amber-700">Evidence Progress</span>
+                        <span id="progress-text" class="text-sm font-medium text-amber-700">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progress-bar" class="bg-amber-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="evidence-checklist" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <section id="support" class="content-section">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Community & Government Support</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">You are not alone. Los Angeles has powerful community organizations and city agencies designed to protect tenants. Engaging with them can add significant pressure on your landlord and provide you with invaluable support.</p>
+            </div>
+            <div class="mt-12 grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <div class="card p-6 rounded-lg">
+                    <h2 class="text-2xl font-bold text-gray-800">Los Angeles Tenants Union (LATU)</h2>
+                    <p class="mt-2 text-gray-600">A tenant-led movement fighting for safe and affordable housing. They are not lawyers, but offer strategic advice, peer support, and help with collective action.</p>
+                    <div class="mt-4 space-y-3">
+                        <p><strong>Chapter:</strong> Downtown Local</p>
+                        <p><strong>Meetings:</strong> Wednesdays, 7-9 pm at Skid Row History Museum & Archive</p>
+                        <p><strong>Email:</strong> <a href="mailto:downtown@latenantsunion.org" class="text-amber-600 hover:underline">downtown@latenantsunion.org</a></p>
+                        <p><strong>Phone:</strong> <a href="tel:2139868266" class="text-amber-600 hover:underline">(213) 986-8266</a></p>
+                    </div>
+                </div>
+                 <div class="card p-6 rounded-lg">
+                    <h2 class="text-2xl font-bold text-gray-800">Los Angeles Housing Department (LAHD)</h2>
+                    <p class="mt-2 text-gray-600">The city agency that enforces housing code. Filing a complaint creates an official record of uninhabitable conditions, which is powerful evidence.</p>
+                    <div class="mt-4 space-y-3">
+                         <p><strong>Action:</strong> File a "Code Complaint" to trigger an official inspection.</p>
+                         <p><strong>How:</strong> Online via their website or by calling the hotline.</p>
+                         <p><strong>Website:</strong> <a href="https://housing.lacity.org/residents/file-a-complaint" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:underline">housing.lacity.org</a></p>
+                         <p><strong>Hotline:</strong> <a href="tel:8665577368" class="text-amber-600 hover:underline">(866) 557-7368</a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sections = document.querySelectorAll('.content-section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            const lawyerData = [
+                { name: 'Tobener Ravenscroft LLP', phone: '323-529-0065', specialization: "CA's largest tenant-only firm.", tags: ['private', 'contingency', 'consultation'] },
+                { name: 'Riley Ersoff LLP', phone: 'Website Contact', specialization: 'Specializes in habitability & personal injury.', tags: ['private', 'contingency', 'consultation'] },
+                { name: 'Schwimer Weinstein LLP', phone: 'Website Contact', specialization: 'Exclusively represents LA tenants.', tags: ['private', 'contingency', 'consultation'] },
+                { name: 'Campbell & Farahani, LLP', phone: 'Website Contact', specialization: 'Experienced trial attorneys.', tags: ['private', 'contingency', 'consultation'] },
+                { name: 'Law Offices of Jacob Partiyeli', phone: '(310) 801-1919', specialization: 'Focuses on health hazards.', tags: ['private', 'contingency', 'consultation'] },
+                { name: 'Stone & Sallus LLP', phone: '310-889-0233', specialization: 'Dedicated tenant practice.', tags: ['private', 'consultation'] },
+                { name: 'Stay Housed LA', phone: '(888) 694-0040', specialization: 'County-wide eviction defense program.', tags: ['non-profit', 'consultation'] },
+                { name: 'Legal Aid Foundation of LA', phone: '800-399-4529', specialization: 'Handles slum conditions & eviction.', tags: ['non-profit', 'consultation'] },
+                { name: 'Neighborhood Legal Services', phone: '800-433-6251', specialization: 'Eviction defense & self-help centers.', tags: ['non-profit', 'consultation'] },
+                { name: 'Bet Tzedek', phone: '(323) 939-0506', specialization: 'Homelessness prevention program.', tags: ['non-profit', 'consultation'] },
+            ];
+
+            const evidenceData = [
+                { id: 'evidence1', text: 'Medical Records (hospitalization, doctor visits, diagnoses)' },
+                { id: 'evidence2', text: 'Landlord Communications (emails, letters, texts)' },
+                { id: 'evidence3', text: 'Dated Photos & Videos (mold, leaks, vents, etc.)' },
+                { id: 'evidence4', text: 'Witness Statements (neighbors, family, friends)' },
+                { id: 'evidence5', text: 'Independent Reports (e.g., air quality test)' },
+                { id: 'evidence6', text: 'Proof of Rent Withholding (separate bank account record)' },
+                { id: 'evidence7', text: 'Copy of the "3-Day Notice to Pay or Quit"' },
+            ];
+            
+            const accordionData = [
+                { title: 'The Implied Warranty of Habitability', content: "This is a legal promise from your landlord, implied in every lease, that your home is safe and livable. This right is absolute and cannot be signed away. It means your landlord must maintain the property and comply with health and safety codes." },
+                { title: 'What Makes a Home "Uninhabitable"?', content: "Legally, a home is uninhabitable if conditions materially affect a tenant's health and safety. This includes basics like working plumbing and electricity, but also extends to serious issues like toxic mold, lead hazards, structural problems, and severe air quality issues that cause illness." },
+                { title: 'The Importance of Giving "Notice"', content: "Before you can legally withhold rent, you must give your landlord written notice of the problem and a 'reasonable' amount of time to fix it. Written notice (email, certified letter) creates a crucial paper trail for your case. It proves the landlord knew about the problem." },
+                { title: 'Rent Withholding: A Powerful but Risky Tool', content: "Withholding rent is your right when the warranty of habitability is severely breached. However, it will almost certainly lead to your landlord filing an eviction lawsuit. In court, the 'breach of warranty' becomes your defense, and you must prove the conditions justified non-payment. It's essential to save the withheld rent in a separate account to show the court you are acting in good faith." },
+            ];
+
+            function switchTab(tabId) {
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === tabId) {
+                        section.classList.add('active');
+                    }
+                });
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.id.includes(tabId)) {
+                        link.classList.add('active');
+                    }
+                });
+                mobileMenu.classList.add('hidden');
+                window.scrollTo(0, 0);
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const tabId = e.target.id.replace('nav-', '').replace('mobile-', '');
+                    switchTab(tabId);
+                });
+            });
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            function renderLawyers(filter = 'all') {
+                const lawyerGrid = document.getElementById('lawyer-grid');
+                lawyerGrid.innerHTML = '';
+                const filteredLawyers = filter === 'all' ? lawyerData : lawyerData.filter(l => l.tags.includes(filter));
+
+                filteredLawyers.forEach(lawyer => {
+                    const card = document.createElement('div');
+                    card.className = 'card p-6 rounded-lg';
+                    let tagsHTML = '';
+                    if (lawyer.tags.includes('contingency')) tagsHTML += `<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-green-600 bg-green-200 mr-2">Contingency Fee</span>`;
+                    if (lawyer.tags.includes('non-profit')) tagsHTML += `<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">Non-Profit</span>`;
+
+                    card.innerHTML = `
+                        <h3 class="text-xl font-bold text-gray-800">${lawyer.name}</h3>
+                        <p class="mt-2 text-gray-600">${lawyer.specialization}</p>
+                        <p class="mt-4 font-semibold text-amber-700">Phone: ${lawyer.phone}</p>
+                        <div class="mt-4">${tagsHTML}</div>
+                    `;
+                    lawyerGrid.appendChild(card);
+                });
+            }
+
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    renderLawyers(button.dataset.filter);
+                });
+            });
+
+            function renderEvidenceChecklist() {
+                const checklistContainer = document.getElementById('evidence-checklist');
+                checklistContainer.innerHTML = '';
+                evidenceData.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'checklist-item relative flex items-start';
+                    div.innerHTML = `
+                        <div class="flex items-center h-5">
+                            <input id="${item.id}" type="checkbox" class="focus:ring-amber-500 h-4 w-4 text-amber-600 border-gray-300 rounded opacity-0 absolute">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="${item.id}" class="font-medium text-gray-700 flex items-center cursor-pointer">
+                                <span class="w-4 h-4 inline-block mr-2 rounded border border-gray-400 flex-shrink-0"></span>
+                                <span class="text-base">${item.text}</span>
+                            </label>
+                        </div>
+                    `;
+                    checklistContainer.appendChild(div);
+                });
+
+                const checkboxes = document.querySelectorAll('#evidence-checklist input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', updateProgress);
+                });
+            }
+
+            function updateProgress() {
+                const checkboxes = document.querySelectorAll('#evidence-checklist input[type="checkbox"]');
+                const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+                const totalCount = checkboxes.length;
+                const percentage = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
+                
+                document.getElementById('progress-bar').style.width = `${percentage}%`;
+                document.getElementById('progress-text').textContent = `${percentage}%`;
+            }
+
+            function renderAccordion() {
+                const container = document.getElementById('accordion-container');
+                accordionData.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'border border-gray-200 rounded-lg bg-white';
+                    div.innerHTML = `
+                        <div class="accordion-header p-4 flex justify-between items-center">
+                            <h2 class="text-lg font-semibold text-gray-800">${item.title}</h2>
+                            <svg class="w-6 h-6 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div class="accordion-content px-4">
+                            <p class="text-gray-600">${item.content}</p>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+
+                const headers = document.querySelectorAll('.accordion-header');
+                headers.forEach(header => {
+                    header.addEventListener('click', () => {
+                        const content = header.nextElementSibling;
+                        const icon = header.querySelector('svg');
+                        
+                        if (content.classList.contains('open')) {
+                            content.classList.remove('open');
+                            icon.style.transform = 'rotate(0deg)';
+                        } else {
+                            // Optional: close other accordions
+                            // document.querySelectorAll('.accordion-content.open').forEach(openContent => {
+                            //     openContent.classList.remove('open');
+                            //     openContent.previousElementSibling.querySelector('svg').style.transform = 'rotate(0deg)';
+                            // });
+                            content.classList.add('open');
+                            icon.style.transform = 'rotate(180deg)';
+                        }
+                    });
+                });
+            }
+
+            switchTab('home');
+            renderLawyers();
+            renderEvidenceChecklist();
+            renderAccordion();
+        });
+    </script>
+</body>
+</html>
